@@ -25,10 +25,14 @@ public class RangedAttackHandler {
 
         double d = Math.hypot(x, z);
 
+        if (d < 1e-6) {
+            return new Vec3(x, y, z); // Shoot straight
+        }
+
         // Predict their movement at arrow landing, assuming the trajectory being straight
         double dt = d / arrowVelocity;
 
-        Vec3 ds = livingEntity.getDeltaMovement().scale(dt); // ds = v * dt = v * ds'/dv'
+        Vec3 ds = livingEntity.getKnownMovement().scale(dt); // ds = v * dt = v * ds'/dv'
         double px = x + ds.x;
         double py = y + Math.min(0.0D, ds.y);
         double pz = z + ds.z;
@@ -40,16 +44,29 @@ public class RangedAttackHandler {
         // This took me way too long
         // Now I understand why Skeletons don't have full-proof aimbots
         double pdt = Math.sqrt(px * px + py * py + pz * pz) / arrowVelocity;
-        double adjustedArrowVelocity = arrowVelocity * (1 - Math.pow(0.99D, pdt)) / (Math.log(1.0101010101D) * pdt);
+        double integratedFriction = (1 - Math.pow(0.99D, pdt)) / (0.01005033585D * pdt);
+        double adjustedArrowVelocity = arrowVelocity * integratedFriction;
 
         double a = 1 + (py * py) / pd2;
         double b = arrowGravity * py - adjustedArrowVelocity * adjustedArrowVelocity;
         double delta = b * b - a * arrowGravity * arrowGravity * pd2;
 
+        if (delta < 0) {
+            return new Vec3(x, y, z); // Shoot straight
+        }
+
         double vdSqr = (-b + Math.sqrt(delta)) / (2.0D * a);
+
+        if (vdSqr < 0) {
+            return new Vec3(x, y, z); // Shoot straight
+        }
+
         double sign = Math.signum(arrowGravity * pd * 0.5D + py * vdSqr / pd);
         double vd = Math.sqrt(vdSqr);
 
+        if (adjustedArrowVelocity * adjustedArrowVelocity - vdSqr < 0) {
+            return new Vec3(x, y, z); // Shoot straight
+        }
 
         double vy = sign * Math.sqrt(adjustedArrowVelocity * adjustedArrowVelocity - vdSqr);
 
