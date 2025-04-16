@@ -67,13 +67,13 @@ public abstract class AbstractSkeletonMixin extends Monster {
         ci.cancel();
     }
 
-    @Shadow protected abstract AbstractArrow getArrow(ItemStack itemStack, float f, @Nullable ItemStack itemStack2);
+    @Shadow protected abstract AbstractArrow getArrow(ItemStack itemStack, float f);
 
     @Inject(method="performRangedAttack", at=@At("HEAD"), cancellable = true)
     public void performRangedAttack(LivingEntity livingEntity, float f, CallbackInfo ci) {
-        ItemStack itemStack = this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, Items.BOW));
-        ItemStack itemStack2 = this.getProjectile(itemStack);
-        AbstractArrow abstractArrow = this.getArrow(itemStack2, f, itemStack);
+        ItemStack itemStack = this.getProjectile(this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, Items.BOW)));
+
+        AbstractArrow abstractArrow = this.getArrow(itemStack, f);
 
         if (this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) >= 1) {
             Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow, 1.6);

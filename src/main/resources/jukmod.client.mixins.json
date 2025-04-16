@@ -6,11 +6,9 @@
     "MultiPlayerGameModeMixin",
     "LivingEntityRendererMixin",
     "IllagerModelMixin",
-    "OverlayTextureMixin",
     "HumanoidModelMixin",
     "ItemInHandRendererMixin",
     "ClientPacketListenerMixin",
-    "RemotePlayerMixin",
     "AnimationUtilsMixin"
   ],
   "injectors": {

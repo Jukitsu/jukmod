@@ -18,13 +18,8 @@
 	"entrypoints": {
 		"main": [
 			"net.jukitsumc.jukmod.Jukmod"
-		],
-		"client": [
-			"net.jukitsumc.jukmod.client.JukmodClient"
-		],
-		"modmenu": [
-			"net.jukitsumc.jukmod.implementation.ModMenuApiImpl"
 		]
+
 	},
 	"mixins": [
 		"jukmod.mixins.json",
@@ -34,9 +29,9 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.15.7",
-		"minecraft": ">=1.21.2",
-		"java": ">=21",
+		"fabricloader": ">=0.16.13",
+		"minecraft": ">=1.20.1",
+		"java": ">=17",
 		"fabric-api": "*"
 	},
 	"suggests": {

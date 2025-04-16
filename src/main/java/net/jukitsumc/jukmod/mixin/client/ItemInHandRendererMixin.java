@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.jukitsumc.jukmod.Jukmod;
-import net.jukitsumc.jukmod.config.option.BooleanOption;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -29,13 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ItemInHandRendererMixin {
 
     @Shadow @Final private ItemRenderer itemRenderer;
-    @Unique
-    private BooleanOption oldSwing;
 
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void initialize(CallbackInfo ci) {
-        oldSwing = Jukmod.getInstance().getConfig().animations().oldSwing();
-    }
 
 
 
@@ -46,8 +39,7 @@ public abstract class ItemInHandRendererMixin {
             index = 2
     )
     public ItemDisplayContext modifyContext(ItemDisplayContext context, @Local AbstractClientPlayer livingEntity, @Local PoseStack poseStack, @Local ItemStack itemStack, @Local int i) {
-        if (oldSwing.get()
-                && !this.itemRenderer.getModel(itemStack, livingEntity.level(), livingEntity, i).isCustomRenderer()
+        if (!this.itemRenderer.getModel(itemStack, livingEntity.level(), livingEntity, i).isCustomRenderer()
                 && !this.itemRenderer.getModel(itemStack, livingEntity.level(), livingEntity, i).isGui3d()
                 && !this.itemRenderer.getModel(itemStack, livingEntity.level(), livingEntity, i).useAmbientOcclusion()
                 && !itemStack.is(Items.FISHING_ROD)

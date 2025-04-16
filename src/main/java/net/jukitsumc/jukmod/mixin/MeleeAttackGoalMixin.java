@@ -27,7 +27,7 @@ public abstract class MeleeAttackGoalMixin extends Goal {
     @Shadow private double pathedTargetY;
     @Shadow private double pathedTargetZ;
 
-    @Shadow protected abstract void checkAndPerformAttack(LivingEntity livingEntity);
+    @Shadow protected abstract void checkAndPerformAttack(LivingEntity livingEntity, double d);
 
     /**
      * Fix ADHD Mobs
@@ -68,6 +68,8 @@ public abstract class MeleeAttackGoalMixin extends Goal {
         if (target == null) {
             return;
         }
+        double d = this.mob.getPerceivedTargetDistanceSquareForMeleeAttack(target);
+
 
         this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
         this.ticksUntilNextPathRecalculation = Math.max(this.ticksUntilNextPathRecalculation - 1, 0);
@@ -77,7 +79,7 @@ public abstract class MeleeAttackGoalMixin extends Goal {
         }
 
         this.ticksUntilNextAttack--;
-        this.checkAndPerformAttack(target);
+        this.checkAndPerformAttack(target, d);
     }
 
     private boolean shouldRecalculatePath(LivingEntity target) {

@@ -2,7 +2,7 @@ package net.jukitsumc.jukmod.mixin;
 
 import com.mojang.logging.LogUtils;
 import net.jukitsumc.jukmod.Jukmod;
-import net.jukitsumc.jukmod.config.option.BooleanOption;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -48,8 +48,7 @@ public abstract class MobMixin extends LivingEntity {
     @Shadow
     @Final
     private BodyRotationControl bodyRotationControl;
-    @Unique
-    private BooleanOption oldBackwardsOption;
+
 
     protected MobMixin(EntityType<? extends Mob> entityType, Level level) {
         super(entityType, level);
@@ -62,11 +61,6 @@ public abstract class MobMixin extends LivingEntity {
     @Overwrite
     public static AttributeSupplier.Builder createMobAttributes() {
         return LivingEntity.createLivingAttributes().add(Attributes.FOLLOW_RANGE, 16.0D).add(Attributes.ATTACK_KNOCKBACK).add(Attributes.ATTACK_SPEED);
-    }
-
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void initialize(CallbackInfo ci) {
-        oldBackwardsOption = Jukmod.getInstance().getConfig().animations().oldBackwards();
     }
 
     @Shadow
@@ -222,11 +216,9 @@ public abstract class MobMixin extends LivingEntity {
 
     @Inject(method = "tickHeadTurn", at = @At("HEAD"), cancellable = true)
     public void tickHeadTurn(float f, float g, CallbackInfoReturnable ci) {
-        if (oldBackwardsOption.get()) {
-            g = super.tickHeadTurn(f, g);
-            bodyRotationControl.clientTick();
-            ci.setReturnValue(g);
-        }
+        g = super.tickHeadTurn(f, g);
+        bodyRotationControl.clientTick();
+        ci.setReturnValue(g);
 
     }
 }

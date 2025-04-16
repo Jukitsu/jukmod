@@ -17,7 +17,7 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.jukitsumc.jukmod.client.config.ModConfig;
+
 
 import java.nio.file.Path;
 
@@ -29,11 +29,7 @@ public class Jukmod implements ModInitializer {
     public static final String MOD_ID = "jukmod";
     private static Jukmod instance;
 
-    public ModConfig config;
-    private ModContainer modContainer;
-    private ModMetadata modMetadata;
 
-    public ModConfig getConfig() { return config; }
 
     public static Jukmod getInstance() { return instance; }
     public Logger getLogger() {
@@ -51,12 +47,6 @@ public class Jukmod implements ModInitializer {
 
         FabricLoader loader = FabricLoader.getInstance();
 
-        modContainer = loader.getModContainer(MOD_ID).orElseThrow(() ->
-                new IllegalStateException("Could not find own mod container!"));
-        modMetadata = modContainer.getMetadata();
-
-        Path configDir = loader.getConfigDir().resolve(MOD_ID);
-        config = new ModConfig(this, configDir.resolve("config.toml"));
 
 
     }
