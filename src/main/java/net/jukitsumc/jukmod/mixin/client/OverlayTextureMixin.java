@@ -36,10 +36,7 @@ public abstract class OverlayTextureMixin {
             }
         }
 
-        RenderSystem.activeTexture(33985);
-        this.texture.bind();
-        nativeImage.upload(0, 0, 0, 0, 0, nativeImage.getWidth(), nativeImage.getHeight(), false, true, false, false);
-        RenderSystem.activeTexture(33984);
+        this.texture.upload();
     }
 
 

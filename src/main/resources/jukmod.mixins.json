@@ -16,7 +16,8 @@
 		"LeapAtTargetGoalMixin",
 		"GroundPathNavigationMixin",
 		"LookControlMixin",
-		"BodyRotationControlMixin"
+		"BodyRotationControlMixin",
+		"IllusionerMixin"
 
 	],
 	"injectors": {

@@ -131,8 +131,8 @@ public abstract class MobMixin extends LivingEntity {
 
                 if (aboveBlockState.getCollisionShape(this.level(), abovePos, collisionContext).isEmpty()) {
                     float jumpPower = this.getJumpPower() * this.getJumpPower() * 6.25F;
-                    if (this.hasEffect(MobEffects.JUMP)) {
-                        jumpPower += (float) (this.getEffect(MobEffects.JUMP).getAmplifier() + 1) * 0.75F;
+                    if (this.hasEffect(MobEffects.JUMP_BOOST)) {
+                        jumpPower += (float) (this.getEffect(MobEffects.JUMP_BOOST).getAmplifier() + 1) * 0.75F;
                     }
 
                     float scaleFactor = Math.max(speed * 2.718281828F, 1.0F / invSqrtLength);
@@ -203,7 +203,7 @@ public abstract class MobMixin extends LivingEntity {
 
     @Inject(method = "aiStep", at = @At(value = "HEAD"))
     private void checkAutoJump(CallbackInfo ci) {
-        if (autoJumpTime > 0) {
+        if (autoJumpTime > 0 && canAutoJump()) {
             --this.autoJumpTime;
             this.getJumpControl().jump();
             this.getMoveControl().operation = MoveControl.Operation.JUMPING;
@@ -221,11 +221,11 @@ public abstract class MobMixin extends LivingEntity {
 
 
     @Inject(method = "tickHeadTurn", at = @At("HEAD"), cancellable = true)
-    public void tickHeadTurn(float f, float g, CallbackInfoReturnable ci) {
+    public void tickHeadTurn(float f, CallbackInfo ci) {
         if (oldBackwardsOption.get()) {
-            g = super.tickHeadTurn(f, g);
+            super.tickHeadTurn(f);
             bodyRotationControl.clientTick();
-            ci.setReturnValue(g);
+            ci.cancel();
         }
 
     }

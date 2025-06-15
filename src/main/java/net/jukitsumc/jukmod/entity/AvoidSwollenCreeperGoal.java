@@ -59,7 +59,7 @@ public class AvoidSwollenCreeperGoal extends Goal {
         if (this.toAvoid == null) {
             return false;
         }
-        if (!this.toAvoid.isAlive() || this.toAvoid.getSwelling(0.0F) < 0.01F) {
+        if (!this.toAvoid.isAlive() || this.toAvoid.getSwelling(0.0F) < 0.05F) {
             this.toAvoid = null;
             return false;
         }

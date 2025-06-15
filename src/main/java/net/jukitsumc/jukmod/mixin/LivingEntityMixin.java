@@ -3,9 +3,11 @@ package net.jukitsumc.jukmod.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.jukitsumc.jukmod.Jukmod;
 import net.jukitsumc.jukmod.config.option.BooleanOption;
+import net.jukitsumc.jukmod.config.option.LongSliderOption;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.InterpolationHandler;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,6 +31,9 @@ public abstract class LivingEntityMixin extends Entity {
     @Unique
     private BooleanOption oldClientMovement;
 
+    @Unique
+    private LongSliderOption entityLerpSteps;
+
     protected LivingEntityMixin(EntityType<? extends LivingEntity> entityType, Level level) {
         super(entityType, level);
     }
@@ -38,6 +43,7 @@ public abstract class LivingEntityMixin extends Entity {
         oldPlayerBackwardsOption = Jukmod.getInstance().getConfig().animations().oldPlayerBackwards();
         oldClientMovement = Jukmod.getInstance().getConfig().entities().oldClientMovement();
         deathWalk = Jukmod.getInstance().getConfig().animations().deathWalk();
+        entityLerpSteps = Jukmod.getInstance().getConfig().entities().entityLerpSteps();
     }
 
     @Shadow
@@ -48,8 +54,10 @@ public abstract class LivingEntityMixin extends Entity {
 
     @Shadow protected abstract float getMaxHeadRotationRelativeToBody();
 
+    @Shadow public abstract InterpolationHandler getInterpolation();
+
     @Inject(method = "tickHeadTurn", at = @At("TAIL"), cancellable = true)
-    public void tickHeadTurn(float f, float g, CallbackInfoReturnable ci) {
+    public void tickHeadTurn(float f, CallbackInfo ci) {
         float angle = Mth.wrapDegrees(f - this.yBodyRot);
         this.yBodyRot += angle * 0.3F;
         float relativeAngle = Mth.wrapDegrees(this.yHeadRot - this.yBodyRot);
@@ -71,10 +79,8 @@ public abstract class LivingEntityMixin extends Entity {
             }
 
         }
-        if (bl) {
-            g *= -1.0F;
-        }
-        ci.setReturnValue(g);
+
+        ci.cancel();
 
     }
 
@@ -85,8 +91,13 @@ public abstract class LivingEntityMixin extends Entity {
         return this.yHeadRot;
     }
 
+    @Inject(method="tick", at=@At(value="HEAD"))
+    public void updateInterpolationSteps(CallbackInfo ci) {
+        this.getInterpolation().setInterpolationLength((int)(long)(entityLerpSteps.get()));
+    }
 
-    @ModifyExpressionValue(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isControlledByLocalInstance()Z"))
+
+    @ModifyExpressionValue(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;canSimulateMovement()Z"))
     private boolean addOldClientMovement(boolean b) {
         return this.oldClientMovement.get() || b;
     }
@@ -106,7 +117,7 @@ public abstract class LivingEntityMixin extends Entity {
      * @reason Fixes MC-147694
      */
     @Overwrite
-    public void blockedByShield(LivingEntity livingEntity) {
+    public void blockedByItem(LivingEntity livingEntity) {
         this.knockback(0.5, livingEntity.getX() - this.getX(), livingEntity.getZ() - this.getZ());
     }
 

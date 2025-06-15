@@ -22,7 +22,7 @@ public class IllagerModelMixin<T extends AbstractIllager> {
         worldWar2 = Jukmod.getInstance().getConfig().animations().worldWar2();
     }
 
-    @Redirect(method = "setupAnim", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;isEmpty()Z"))
+    @Redirect(method = "setupAnim", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/item/ItemStackRenderState;isEmpty()Z"))
     public boolean bringBackOldIllagers(ItemStack stack) {
         return !worldWar2.get();
     }

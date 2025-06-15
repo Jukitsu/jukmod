@@ -58,7 +58,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
     }
 
     @Inject(method="setupRotations", at=@At(value="INVOKE",
-            target="Lcom/mojang/blaze3d/vertex/PoseStack;mulPose(Lorg/joml/Quaternionf;)V",
+            target="Lcom/mojang/blaze3d/vertex/PoseStack;mulPose(Lorg/joml/Quaternionfc;)V",
             ordinal = 1
     ), cancellable = true)
     protected void lieCorrectlyWhenDying(S livingEntityRenderState, PoseStack poseStack, float f, float g, CallbackInfo ci) {

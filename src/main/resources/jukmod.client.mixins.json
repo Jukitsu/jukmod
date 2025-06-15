@@ -9,7 +9,6 @@
     "OverlayTextureMixin",
     "HumanoidModelMixin",
     "ItemInHandRendererMixin",
-    "ClientPacketListenerMixin",
     "RemotePlayerMixin",
     "AnimationUtilsMixin"
   ],

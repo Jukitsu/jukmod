@@ -11,7 +11,7 @@ public class JukmodHUD implements HudRenderCallback {
     @Override
     public void onHudRender(GuiGraphics drawContext, DeltaTracker deltaTracker) {
         if (!client.getDebugOverlay().showDebugScreen()) {
-            drawContext.drawString(this.client.font, "Minecraft 1.21.3", 2, 2, 0xffffffff, true);
+            drawContext.drawString(this.client.font, "Minecraft 1.21.5", 2, 2, 0xffffffff, true);
             drawContext.drawString(this.client.font, String.format("%s fps", client.getFps()), 2, client.font.lineHeight + 2, 0xffffffff, true);
         }
     }
