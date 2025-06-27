@@ -93,7 +93,13 @@ public abstract class LivingEntityMixin extends Entity {
 
     @Inject(method="tick", at=@At(value="HEAD"))
     public void updateInterpolationSteps(CallbackInfo ci) {
-        this.getInterpolation().setInterpolationLength((int)(long)(entityLerpSteps.get()));
+        int i = (int)(long)(entityLerpSteps.get());
+        if (i > 0) {
+            this.getInterpolation().setInterpolationLength(i);
+        }
+        else {
+            this.getInterpolation().setInterpolationLength(this.getType().updateInterval());
+        }
     }
 
 
