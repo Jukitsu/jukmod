@@ -43,8 +43,7 @@ public class AvoidSwollenCreeperGoal extends Goal {
         this.predicateOnAvoidEntity = predicate2;
         this.pathNav = pathfinderMob.getNavigation();
         this.setFlags(EnumSet.of(Goal.Flag.MOVE));
-        this.avoidEntityTargeting = TargetingConditions.forCombat().range(f).selector((livingEntity, serverLevel)
-                -> predicate2.test(livingEntity) && predicate.test(livingEntity));
+        this.avoidEntityTargeting = TargetingConditions.forCombat().range(f).selector(predicate2.and(predicate));
     }
 
     public AvoidSwollenCreeperGoal(PathfinderMob pathfinderMob, float f, double d, double e, Predicate<LivingEntity> predicate) {
@@ -53,9 +52,12 @@ public class AvoidSwollenCreeperGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        this.toAvoid =  getServerLevel(this.mob).getNearestEntity(this.mob.level().getEntitiesOfClass(Creeper.class, this.mob.getBoundingBox().inflate((double)this.maxDist, 3.0, (double)this.maxDist), (livingEntity) -> {
-            return true;
-        }), this.avoidEntityTargeting, this.mob, this.mob.getX(), this.mob.getY(), this.mob.getZ());
+        this.toAvoid = this.mob.level().getNearestEntity(
+                this.mob.level().getEntitiesOfClass(Creeper.class, this.mob.getBoundingBox().inflate(
+                        this.maxDist, 3.0, this.maxDist),
+                        livingEntity -> true),
+                this.avoidEntityTargeting, this.mob, this.mob.getX(), this.mob.getY(), this.mob.getZ()
+        );
         if (this.toAvoid == null) {
             return false;
         }

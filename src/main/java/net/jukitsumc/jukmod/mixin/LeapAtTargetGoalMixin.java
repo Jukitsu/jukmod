@@ -32,7 +32,7 @@ public abstract class LeapAtTargetGoalMixin extends Goal {
     public void tick() {
         if (this.mob.isWithinMeleeAttackRange(target) && this.mob.getSensing().hasLineOfSight(target)) {
             this.mob.swing(InteractionHand.MAIN_HAND);
-            this.mob.doHurtTarget((ServerLevel)target.level(), target);
+            this.mob.doHurtTarget(target);
             super.stop();
         }
     }

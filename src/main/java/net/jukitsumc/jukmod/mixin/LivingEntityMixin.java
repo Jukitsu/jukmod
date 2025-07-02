@@ -96,10 +96,6 @@ public abstract class LivingEntityMixin extends Entity {
         return this.oldPlayerBackwardsOption.get() ? 0.0F : f;
     }
 
-    @ModifyExpressionValue(method = "calculateEntityAnimation", at=@At(value="INVOKE", target="Lnet/minecraft/world/entity/LivingEntity;isAlive()Z"))
-    private boolean deathWalkAnimation(boolean original) {
-        return deathWalk.get() || original;
-    }
 
     /**
      * @author Jukitsu

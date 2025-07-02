@@ -6,7 +6,6 @@
     "MultiPlayerGameModeMixin",
     "LivingEntityRendererMixin",
     "IllagerModelMixin",
-    "OverlayTextureMixin",
     "HumanoidModelMixin",
     "ItemInHandRendererMixin",
     "ClientPacketListenerMixin",

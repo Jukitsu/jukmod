@@ -29,10 +29,12 @@ public class RangedAttackHandler {
             return new Vec3(x, y, z); // Shoot straight
         }
 
-        // Predict their movement at arrow landing, assuming the trajectory being straight
+        // Predict their movement at arrow landing, let's not assume the trajectory being straight.
+        // The trajectory is parabolic
         double dt = d / arrowVelocity;
 
-        Vec3 ds = livingEntity.getKnownMovement().scale(dt); // ds = v * dt = v * ds'/dv'
+
+        Vec3 ds = livingEntity.getKnownMovement().scale(dt); // ds = v * dt = v * ds'/dv// '
         double px = x + ds.x;
         double py = y + Math.min(0.0D, ds.y);
         double pz = z + ds.z;

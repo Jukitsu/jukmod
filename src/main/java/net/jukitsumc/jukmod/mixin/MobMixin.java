@@ -15,6 +15,9 @@ import net.minecraft.world.entity.ai.control.JumpControl;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.ambient.Bat;
+import net.minecraft.world.entity.animal.Bee;
+import net.minecraft.world.entity.animal.Rabbit;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -203,7 +206,9 @@ public abstract class MobMixin extends LivingEntity {
 
     @Inject(method = "aiStep", at = @At(value = "HEAD"))
     private void checkAutoJump(CallbackInfo ci) {
-        if (autoJumpTime > 0) {
+        if (!((LivingEntity)this instanceof Rabbit
+                || (LivingEntity)this instanceof Bat
+                || (LivingEntity)this instanceof Bee) && autoJumpTime > 0) {
             --this.autoJumpTime;
             this.getJumpControl().jump();
             this.getMoveControl().operation = MoveControl.Operation.JUMPING;
