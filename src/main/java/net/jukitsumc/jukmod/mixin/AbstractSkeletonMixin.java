@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractSkeletonMixin extends Monster {
     @Shadow @Final private RangedBowAttackGoal<AbstractSkeleton> bowGoal;
     @Shadow @Final private MeleeAttackGoal meleeGoal;
-    private final RangedBowAttackGoal<AbstractSkeleton> newBowGoal = new RangedBowAttackGoal(this, 1.0D, 20, 32.0F);
+    private final RangedBowAttackGoal<AbstractSkeleton> newBowGoal = new RangedBowAttackGoal(this, 1.0D, 20, 64.0F);
 
     protected AbstractSkeletonMixin(EntityType<? extends AbstractSkeleton> entityType, Level level) {
         super(entityType, level);
@@ -42,7 +42,7 @@ public abstract class AbstractSkeletonMixin extends Monster {
 
     @ModifyReturnValue(method="createAttributes", at=@At("TAIL"))
     private static AttributeSupplier.Builder modifyAttributes(AttributeSupplier.Builder original) {
-        return original.add(Attributes.FOLLOW_RANGE, 96.0F);
+        return original.add(Attributes.FOLLOW_RANGE, 64.0F);
     }
 
     @Inject(method="reassessWeaponGoal", at=@At("HEAD"), cancellable = true)
