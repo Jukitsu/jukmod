@@ -64,7 +64,7 @@ public abstract class HumanoidModelMixin<T extends HumanoidRenderState> extends 
 
 
     @Inject(method = "setupAttackAnimation", at = @At("HEAD"), cancellable = true)
-    public void onSetupAttackAnimation(T humanoidRenderState, float f, CallbackInfo ci) {
+    public void onSetupAttackAnimation(T humanoidRenderState, CallbackInfo ci) {
         if (!(humanoidRenderState.attackTime <= 0.0F) && fixLeftHand.get()) {
             HumanoidArm humanoidArm = this.getAttackArm(humanoidRenderState);
             ModelPart modelPart = this.getArm(humanoidArm);

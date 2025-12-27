@@ -5,7 +5,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
@@ -17,10 +16,10 @@ public class RangedAttackHandler {
 
     private static final double arrowGravity = 0.05D;
 
-    public static Vec3 getInitialVector(Mob me, LivingEntity livingEntity, Projectile projectile, double arrowVelocity) {
+    public static Vec3 getInitialVector(LivingEntity me, LivingEntity livingEntity, double projectile_y, double arrowVelocity) {
         // Get the vector this -> target
         double x = livingEntity.getX() - me.getX();
-        double y = livingEntity.getEyeY() - projectile.getY();
+        double y = livingEntity.getEyeY() - projectile_y;
         double z = livingEntity.getZ() - me.getZ();
 
         double d = Math.hypot(x, z);

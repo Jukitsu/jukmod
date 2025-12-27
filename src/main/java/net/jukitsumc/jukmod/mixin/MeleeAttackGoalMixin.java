@@ -17,6 +17,8 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(MeleeAttackGoal.class)
 public abstract class MeleeAttackGoalMixin extends Goal {
 
+    @Shadow private long lastCanUseCheck;
+
     @Shadow @Final protected PathfinderMob mob;
     @Shadow private int ticksUntilNextAttack;
     @Shadow private Path path;
@@ -115,8 +117,8 @@ public abstract class MeleeAttackGoalMixin extends Goal {
 
         return target != null
                 && target.isAlive()
-                && this.mob.isWithinRestriction(target.blockPosition())
-                && (followingTargetEvenIfNotSeen || this.mob.getNavigation().isInProgress())
+                && this.mob.isWithinHome(target.blockPosition())
+                && (this.followingTargetEvenIfNotSeen || this.mob.getNavigation().isInProgress())
                 && (!(target instanceof Player) || (!target.isSpectator() && !((Player) target).isCreative()));
     }
 

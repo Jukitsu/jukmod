@@ -2,8 +2,9 @@ package net.jukitsumc.jukmod.mixin.client;
 
 import net.jukitsumc.jukmod.Jukmod;
 import net.jukitsumc.jukmod.config.option.BooleanOption;
-import net.minecraft.client.model.IllagerModel;
-import net.minecraft.world.entity.monster.AbstractIllager;
+import net.minecraft.client.model.monster.illager.IllagerModel;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.world.entity.monster.illager.AbstractIllager;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -23,7 +24,7 @@ public class IllagerModelMixin<T extends AbstractIllager> {
     }
 
     @Redirect(method = "setupAnim", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/item/ItemStackRenderState;isEmpty()Z"))
-    public boolean bringBackOldIllagers(ItemStack stack) {
+    public boolean bringBackOldIllagers(ItemStackRenderState stack) {
         return !worldWar2.get();
     }
 }

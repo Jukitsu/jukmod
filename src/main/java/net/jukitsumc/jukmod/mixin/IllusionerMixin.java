@@ -5,12 +5,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Illusioner;
 import net.minecraft.world.entity.monster.RangedAttackMob;
-import net.minecraft.world.entity.monster.SpellcasterIllager;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.monster.illager.Illusioner;
+import net.minecraft.world.entity.monster.illager.SpellcasterIllager;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -39,15 +39,19 @@ public abstract class IllusionerMixin extends SpellcasterIllager implements Rang
         AbstractArrow abstractArrow = ProjectileUtil.getMobArrow(this, itemStack2, f, itemStack);
         Level var15 = this.level();
         if (var15 instanceof ServerLevel serverLevel) {
-            if (this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) >= 1) {
-                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow, 1.6);
-                Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 1.6F, (float)(12 - this.level().getDifficulty().getId() * 4));
-            } else {
-                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow, 3.0);
+            if (this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) < 1
+                    || (this.level().getDifficulty().getId() > 2 && this.distanceToSqr(livingEntity) > 1600)) {
+                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 3.0);
+                this.lookControl.setLookAt(this.getEyePosition().add(v));
                 Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 3.0F, (float)(Math.max(0.0D, 8 - this.level().getDifficulty().getId() * 4)));
                 if (this.getRandom().nextFloat() >= 0.5F) {
                     abstractArrow.setCritArrow(true);
                 }
+            }
+            else {
+                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 1.6);
+                this.lookControl.setLookAt(this.getEyePosition().add(v));
+                Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 1.6F, (float)(12 - this.level().getDifficulty().getId() * 4));
             }
         }
 

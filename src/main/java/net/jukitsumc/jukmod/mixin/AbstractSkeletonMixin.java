@@ -11,11 +11,12 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RangedBowAttackGoal;
-import net.minecraft.world.entity.monster.AbstractSkeleton;
+
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.monster.skeleton.AbstractSkeleton;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -31,7 +32,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AbstractSkeleton.class)
 public abstract class AbstractSkeletonMixin extends Monster {
-
     @Shadow @Final private RangedBowAttackGoal<AbstractSkeleton> bowGoal;
     @Shadow @Final private MeleeAttackGoal meleeGoal;
     private final RangedBowAttackGoal<AbstractSkeleton> newBowGoal = new RangedBowAttackGoal(this, 1.0D, 20, 32.0F);
@@ -42,12 +42,12 @@ public abstract class AbstractSkeletonMixin extends Monster {
 
     @ModifyReturnValue(method="createAttributes", at=@At("TAIL"))
     private static AttributeSupplier.Builder modifyAttributes(AttributeSupplier.Builder original) {
-        return original.add(Attributes.FOLLOW_RANGE, 32.0F);
+        return original.add(Attributes.FOLLOW_RANGE, 96.0F);
     }
 
     @Inject(method="reassessWeaponGoal", at=@At("HEAD"), cancellable = true)
     public void reassessWeaponGoal(CallbackInfo ci) {
-        if (this.level() != null && !this.level().isClientSide) {
+        if (this.level() != null && !this.level().isClientSide()) {
             this.goalSelector.removeGoal(this.meleeGoal);
             this.goalSelector.removeGoal(this.bowGoal);
             this.goalSelector.removeGoal(this.newBowGoal);
@@ -78,15 +78,19 @@ public abstract class AbstractSkeletonMixin extends Monster {
         AbstractArrow abstractArrow = this.getArrow(itemStack2, f, itemStack);
         Level var15 = this.level();
         if (var15 instanceof ServerLevel serverLevel) {
-            if (this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) >= 1) {
-                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow, 1.6);
-                Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 1.6F, (float)(12 - this.level().getDifficulty().getId() * 4));
-            } else {
-                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow, 3.0);
+            if (this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) < 1
+                || (this.level().getDifficulty().getId() > 2 && this.distanceToSqr(livingEntity) > 1600)) {
+                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 3.0);
+                this.lookControl.setLookAt(this.getEyePosition().add(v));
                 Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 3.0F, (float)(Math.max(0.0D, 8 - this.level().getDifficulty().getId() * 4)));
-                if (this.getRandom().nextFloat() >= 0.5F) {
+                if (this.getRandom().nextFloat() >= 0.9F) {
                     abstractArrow.setCritArrow(true);
                 }
+            }
+            else {
+                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 1.6);
+                this.lookControl.setLookAt(this.getEyePosition().add(v));
+                Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 1.6F, (float)(12 - this.level().getDifficulty().getId() * 4));
             }
         }
 

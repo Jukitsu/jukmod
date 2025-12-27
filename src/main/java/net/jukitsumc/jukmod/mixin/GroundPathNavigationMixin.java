@@ -19,6 +19,7 @@ public abstract class GroundPathNavigationMixin extends PathNavigation {
         super(mob, level);
     }
 
+
     @ModifyReturnValue(method="canUpdatePath", at=@At("TAIL"))
     public boolean canUpdatePath(boolean original) { return true; }
 

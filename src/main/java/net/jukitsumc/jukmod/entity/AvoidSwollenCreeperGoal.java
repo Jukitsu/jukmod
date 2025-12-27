@@ -53,7 +53,7 @@ public class AvoidSwollenCreeperGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        this.toAvoid =  getServerLevel(this.mob).getNearestEntity(this.mob.level().getEntitiesOfClass(Creeper.class, this.mob.getBoundingBox().inflate((double)this.maxDist, 3.0, (double)this.maxDist), (livingEntity) -> {
+        this.toAvoid = getServerLevel(this.mob).getNearestEntity(this.mob.level().getEntitiesOfClass(Creeper.class, this.mob.getBoundingBox().inflate((double)this.maxDist, 3.0, (double)this.maxDist), (livingEntity) -> {
             return true;
         }), this.avoidEntityTargeting, this.mob, this.mob.getX(), this.mob.getY(), this.mob.getZ());
         if (this.toAvoid == null) {

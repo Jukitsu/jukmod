@@ -1,6 +1,7 @@
 package net.jukitsumc.jukmod.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import net.jukitsumc.jukmod.entity.RangedAttackHandler;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -34,8 +35,11 @@ public class RangedBowAttackGoalMixin<T extends Monster & RangedAttackMob> {
     @Inject(method = "tick", at = @At("TAIL"))
     public void fixSkeletonStrafing(CallbackInfo info) {
         LivingEntity livingEntity = this.mob.getTarget();
-        if (livingEntity != null)
-            this.mob.getLookControl().setLookAt(livingEntity, 30.0F, 30.0F);
+        if (livingEntity != null) {
+            Vec3 v = RangedAttackHandler.getInitialVector(this.mob, livingEntity, this.mob.getEyeY(), 3.0);
+            this.mob.getLookControl().setLookAt(this.mob.getEyePosition().add(v));
+        }
+
     }
 
     @Redirect(method="tick", at=@At(value = "INVOKE", target="Lnet/minecraft/world/entity/monster/Monster;stopUsingItem()V"))
@@ -49,7 +53,7 @@ public class RangedBowAttackGoalMixin<T extends Monster & RangedAttackMob> {
         Vec3 displacement = this.mob.getPosition(0.0f).subtract(livingEntity.getPosition(0.0f));
         double dotproduct = velocity.dot(displacement);
         if (dotproduct * dotproduct >= 0.25 * velocity.lengthSqr() * displacement.lengthSqr()
-                || this.mob.getRandom().nextInt(12 - this.mob.level().getDifficulty().getId() * 2) > 5) {
+                || this.mob.getRandom().nextInt(12 - this.mob.level().getDifficulty().getId() * 2) > 4) {
             this.mob.stopUsingItem();
             this.mob.performRangedAttack(livingEntity, v);
         }

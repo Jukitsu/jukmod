@@ -12,7 +12,6 @@ import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.slf4j.Logger;

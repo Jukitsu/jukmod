@@ -19,7 +19,7 @@ public class PathfinderMobMixin extends Mob {
 
     @Inject(method = "<init>", at = @At("TAIL"))
     public void fleeSwellingCreeper(EntityType<? extends Mob> entityType, Level level, CallbackInfo info) {
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             this.goalSelector.addGoal(1, new AvoidSwollenCreeperGoal((PathfinderMob) (Object) this, 4.0F, 1.0D, 1.2D));
         }
     }

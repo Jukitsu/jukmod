@@ -23,10 +23,6 @@ public abstract class LeapAtTargetGoalMixin extends Goal {
     @Shadow
     private LivingEntity target;
 
-    @Inject(method="start", at=@At("TAIL"))
-    public void start(CallbackInfo ci) {
-        this.mob.hasImpulse = true;
-    }
 
     @Override
     public void tick() {

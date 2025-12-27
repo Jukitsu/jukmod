@@ -1,16 +1,18 @@
-#version 150
+#version 330
 
 #moj_import <minecraft:fog.glsl>
+#moj_import <minecraft:dynamictransforms.glsl>
 
 uniform sampler2D Sampler0;
 
-uniform vec4 ColorModulator;
-uniform float FogStart;
-uniform float FogEnd;
-uniform vec4 FogColor;
-
-in float vertexDistance;
+in float sphericalVertexDistance;
+in float cylindricalVertexDistance;
+#ifdef PER_FACE_LIGHTING
+in vec4 vertexPerFaceColorBack;
+in vec4 vertexPerFaceColorFront;
+#else
 in vec4 vertexColor;
+#endif
 in vec4 lightMapColor;
 in vec4 overlayColor;
 in vec2 texCoord0;
@@ -27,9 +29,13 @@ void main() {
 #ifndef NO_OVERLAY
     color.rgb = mix(overlayColor.rgb, color.rgb, overlayColor.a);
 #endif
+#ifdef PER_FACE_LIGHTING
+    color *= (gl_FrontFacing ? vertexPerFaceColorFront : vertexPerFaceColorBack) * ColorModulator;
+#else
     color *= vertexColor * ColorModulator;
+#endif
 #ifndef EMISSIVE
     color *= lightMapColor;
 #endif
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 }

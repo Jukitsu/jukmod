@@ -94,10 +94,10 @@ public abstract class LivingEntityMixin extends Entity {
     @Inject(method="tick", at=@At(value="HEAD"))
     public void updateInterpolationSteps(CallbackInfo ci) {
         int i = (int)(long)(entityLerpSteps.get());
-        if (i > 0) {
+        if (i > 0 && this.isInterpolating()) {
             this.getInterpolation().setInterpolationLength(i);
         }
-        else {
+        else if (this.isInterpolating()) {
             this.getInterpolation().setInterpolationLength(this.getType().updateInterval());
         }
     }
@@ -107,6 +107,13 @@ public abstract class LivingEntityMixin extends Entity {
     private boolean addOldClientMovement(boolean b) {
         return this.oldClientMovement.get() || b;
     }
+
+    @ModifyExpressionValue(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isEffectiveAi()Z", ordinal = 1))
+    private boolean addOldClientMovement2(boolean b) { return this.oldClientMovement.get() || b; }
+
+
+    @ModifyExpressionValue(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isLocalInstanceAuthoritative()Z"))
+    private boolean addOldClientMovement3(boolean b) { return this.oldClientMovement.get() || b; }
 
     @ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;abs(F)F"))
     private float forceOldBackwardsAnimations(float f) {

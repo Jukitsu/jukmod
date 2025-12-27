@@ -17,8 +17,8 @@
 		"GroundPathNavigationMixin",
 		"LookControlMixin",
 		"BodyRotationControlMixin",
-		"IllusionerMixin"
-
+		"IllusionerMixin",
+		"CrossbowItemMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

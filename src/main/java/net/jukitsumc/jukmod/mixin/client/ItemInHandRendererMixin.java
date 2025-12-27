@@ -22,7 +22,6 @@ import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.InteractionHand;
@@ -51,29 +50,25 @@ import java.util.List;
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
 
-    @Shadow @Final private ItemRenderer itemRenderer;
-    @Shadow @Final private ItemModelResolver itemModelResolver;
     @Unique
     private BooleanOption oldSwing;
-    private ModelManager modelManager;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void initialize(CallbackInfo ci) {
 
         oldSwing = Jukmod.getInstance().getConfig().animations().oldSwing();
-        modelManager = Minecraft.getInstance().getModelManager();
     }
 
 
     @ModifyArg(method="renderArmWithItem",
             at=@At(value="INVOKE",
-                    target="Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
+                    target="Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;I)V",
                     ordinal = 1),
             index = 2
     )
     public ItemDisplayContext modifyContext(ItemDisplayContext context,
                                             @Local AbstractClientPlayer livingEntity, @Local InteractionHand interactionHand,
-                                            @Local PoseStack poseStack, @Local ItemStack itemStack, @Local int i) {
+                                            @Local PoseStack poseStack, @Local ItemStack itemStack, @Local int j) {
         if (oldSwing.get() && !(itemStack.getItem() instanceof BlockItem)) {
             final HumanoidArm arm = interactionHand == InteractionHand.MAIN_HAND ? livingEntity.getMainArm() : livingEntity.getMainArm().getOpposite();
             final int direction = arm == HumanoidArm.RIGHT ? 1 : -1;
