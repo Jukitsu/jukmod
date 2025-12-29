@@ -39,14 +39,19 @@ public abstract class IllusionerMixin extends SpellcasterIllager implements Rang
         AbstractArrow abstractArrow = ProjectileUtil.getMobArrow(this, itemStack2, f, itemStack);
         Level var15 = this.level();
         if (var15 instanceof ServerLevel serverLevel) {
-            if (this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) < 1
-                    || (this.level().getDifficulty().getId() > 2 && this.distanceToSqr(livingEntity) > 1600)) {
+            if ((this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) < 1
+                    || (this.level().getDifficulty().getId() > 2 && this.distanceToSqr(livingEntity) > 400)) && this.distanceToSqr(livingEntity) > 25.0F) {
                 Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 3.0);
                 this.lookControl.setLookAt(this.getEyePosition().add(v));
                 Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 3.0F, (float)(Math.max(0.0D, 8 - this.level().getDifficulty().getId() * 4)));
-                if (this.getRandom().nextFloat() >= 0.5F) {
+                if (this.getRandom().nextFloat() >= 0.9F) {
                     abstractArrow.setCritArrow(true);
                 }
+            }
+            else if (this.distanceToSqr(livingEntity) < 25.0F) {
+                Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 0.8F);
+                this.lookControl.setLookAt(this.getEyePosition().add(v));
+                Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 0.8F, (float)(12 - this.level().getDifficulty().getId() * 4));
             }
             else {
                 Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 1.6);
@@ -58,5 +63,6 @@ public abstract class IllusionerMixin extends SpellcasterIllager implements Rang
         this.playSound(SoundEvents.ARROW_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
 
         ci.cancel();
+
     }
 }

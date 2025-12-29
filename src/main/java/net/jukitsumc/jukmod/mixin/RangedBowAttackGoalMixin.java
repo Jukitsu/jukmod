@@ -70,7 +70,8 @@ public class RangedBowAttackGoalMixin<T extends Monster & RangedAttackMob> {
         Vec3 velocity = livingEntity.getKnownMovement();
         Vec3 displacement = this.mob.getPosition(0.0f).subtract(livingEntity.getPosition(0.0f));
         double dotproduct = velocity.dot(displacement);
-        if (this.coyoteTime == 0 && dotproduct * dotproduct < 0.25 * velocity.lengthSqr() * displacement.lengthSqr() && velocity.lengthSqr() > 0.04F) {
+        if ((this.coyoteTime == 0 && dotproduct * dotproduct < 0.25 * velocity.lengthSqr() * displacement.lengthSqr() && velocity.lengthSqr() > 0.04F)
+                || livingEntity.isBlocking()) {
             this.lockedIn = true;
             this.lockInTime += 1;
         } else if (this.lockedIn) {
