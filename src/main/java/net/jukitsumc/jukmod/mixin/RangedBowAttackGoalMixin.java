@@ -5,7 +5,11 @@ import net.jukitsumc.jukmod.entity.RangedAttackHandler;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.behavior.BackUpIfTooClose;
+import net.minecraft.world.entity.ai.behavior.EntityTracker;
+import net.minecraft.world.entity.ai.behavior.OneShot;
 import net.minecraft.world.entity.ai.goal.RangedBowAttackGoal;
+import net.minecraft.world.entity.ai.memory.NearestVisibleLivingEntities;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.item.BowItem;
@@ -37,14 +41,17 @@ public class RangedBowAttackGoalMixin<T extends Monster & RangedAttackMob> {
 
     @Shadow private int attackIntervalMin;
 
+
+
     @Inject(method = "tick", at = @At(value="INVOKE", target="Lnet/minecraft/world/entity/monster/Monster;getTicksUsingItem()I"))
     public void bowSpam(CallbackInfo info) {
         LivingEntity target = this.mob.getTarget();
         int i = this.mob.getTicksUsingItem();
-        if (i >= 10 && this.mob.distanceToSqr(target) < 25.0F) {
+        if (i >= 10 && this.mob.closerThan(target, 5.0)) {
             this.mob.stopUsingItem();
             ((RangedAttackMob)this.mob).performRangedAttack(target, BowItem.getPowerForTime(i));
             this.attackTime = this.attackIntervalMin;
+
         }
     }
 
@@ -76,7 +83,7 @@ public class RangedBowAttackGoalMixin<T extends Monster & RangedAttackMob> {
         } else if (this.lockedIn) {
             this.lockedIn = false;
             this.lockInTime = 0;
-            this.coyoteTime = this.mob.getRandom().nextInt(2, 6);
+            this.coyoteTime = this.mob.getRandom().nextInt(1, 6);
         }
         if ((this.coyoteTime == 0 && !this.lockedIn && this.mob.getRandom().nextInt(24 - this.mob.level().getDifficulty().getId() * 4) > 5)
                 || (this.lockedIn && this.mob.getRandom().nextInt(24 - this.mob.level().getDifficulty().getId() * 4) > 11)

@@ -43,7 +43,7 @@ public class RangedAttackHandler {
         // This took me way too long
         // Now I understand why Skeletons don't have full-proof aimbots
         double pdt = Math.sqrt(px * px + py * py + pz * pz) / arrowVelocity;
-        double integratedFriction = (1 - Math.pow(0.99D, pdt)) / (0.01005033585D * pdt);
+        double integratedFriction = (1 - Math.pow(0.99D, pdt)) / (0.01D * pdt);
         double adjustedArrowVelocity = arrowVelocity * integratedFriction;
 
         double a = 1 + (py * py) / pd2;

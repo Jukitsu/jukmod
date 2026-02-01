@@ -10,7 +10,7 @@
     "HumanoidModelMixin",
     "ItemInHandRendererMixin",
     "RemotePlayerMixin",
-    "AnimationUtilsMixin"
+    "AbstractZombieModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1
