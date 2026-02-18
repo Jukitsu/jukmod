@@ -24,7 +24,7 @@ public abstract class AbstractIllagerMixin extends Raider {
     @Inject(method = "<init>", at = @At("TAIL"))
     public void addArsonGoal(EntityType<? extends AbstractIllager> entityType, Level level, CallbackInfo info) {
         if (level != null && !level.isClientSide()) {
-            this.goalSelector.addGoal(5,
+            this.goalSelector.addGoal(2,
                     new RaiderArsonGoal(this, 1.0D, 30)
             );
 

@@ -13,9 +13,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FireBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
 
 public class RaiderArsonGoal extends Goal {
@@ -26,7 +24,7 @@ public class RaiderArsonGoal extends Goal {
     private int tryTicks = 0;
 
     private final int MAX_TRYING_TICKS = 160;
-    private final int COOLDOWN_TICKS = 80;
+    private final int COOLDOWN_TICKS = 140;
     private int nextSearchTick = 0;
 
     /**
@@ -134,14 +132,16 @@ public class RaiderArsonGoal extends Goal {
         }
     }
 
+    private static final int CLUSTER_RADIUS = 6; // Max Chebyshev distance to consider blocks "connected"
+
+    private static final int FIRE_RADIUS = 2;     // Blocks to check for existing fire near a cluster
+
     private BlockPos findFlammableBlock() {
         Level level = mob.level();
         BlockPos mobPos = mob.blockPosition();
         int radius = searchRadius;
-        int DENSITY_RADIUS = 5;      // size of neighbourhood for cluster density
-        int FIRE_RADIUS = 10;        // blocks to check for existing fire (tune as needed)
 
-        // Bounding box for flammable search (original radius)
+        // Bounding box for flammable search
         int sMinX = mobPos.getX() - radius;
         int sMinY = mobPos.getY() - radius;
         int sMinZ = mobPos.getZ() - radius;
@@ -149,7 +149,7 @@ public class RaiderArsonGoal extends Goal {
         int sMaxY = mobPos.getY() + radius;
         int sMaxZ = mobPos.getZ() + radius;
 
-        // Expanded bounding box to include fire that may affect neighbourhood checks
+        // Expanded bounding box for fire detection (to catch fires just outside the search area)
         int fMinX = sMinX - FIRE_RADIUS;
         int fMinY = sMinY - FIRE_RADIUS;
         int fMinZ = sMinZ - FIRE_RADIUS;
@@ -157,18 +157,10 @@ public class RaiderArsonGoal extends Goal {
         int fMaxY = sMaxY + FIRE_RADIUS;
         int fMaxZ = sMaxZ + FIRE_RADIUS;
 
-        int sSizeX = sMaxX - sMinX + 1;
-        int sSizeY = sMaxY - sMinY + 1;
-        int sSizeZ = sMaxZ - sMinZ + 1;
-        int fSizeX = fMaxX - fMinX + 1;
-        int fSizeY = fMaxY - fMinY + 1;
-        int fSizeZ = fMaxZ - fMinZ + 1;
+        // Collect all flammable blocks within the search area
+        List<BlockPos> flammableList = new ArrayList<>();
+        Set<BlockPos> flammableSet = new HashSet<>(); // for O(1) boundary checks
 
-        // Grids: 1 = flammable (search area only), 1 = fire (expanded area)
-        int[][][] flammable = new int[sSizeX][sSizeY][sSizeZ];
-        int[][][] fire = new int[fSizeX][fSizeY][fSizeZ];
-
-        // Fill flammable grid (only blocks inside original search radius)
         for (int x = sMinX; x <= sMaxX; x++) {
             for (int y = sMinY; y <= sMaxY; y++) {
                 for (int z = sMinZ; z <= sMaxZ; z++) {
@@ -176,137 +168,176 @@ public class RaiderArsonGoal extends Goal {
                     BlockState state = level.getBlockState(pos);
                     if (!state.isAir() && !state.is(Blocks.FIRE) &&
                             FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getSpreadChance() > 0) {
-                        flammable[x - sMinX][y - sMinY][z - sMinZ] = 1;
+                        flammableList.add(pos);
+                        flammableSet.add(pos);
                     }
                 }
             }
         }
 
-        // Fill fire grid (expanded area)
+        if (flammableList.isEmpty()) {
+            return null;
+        }
+
+        // Collect all fire blocks within the expanded area (for fire‑near‑cluster checks)
+        Set<BlockPos> fireSet = new HashSet<>();
         for (int x = fMinX; x <= fMaxX; x++) {
             for (int y = fMinY; y <= fMaxY; y++) {
                 for (int z = fMinZ; z <= fMaxZ; z++) {
                     if (level.getBlockState(new BlockPos(x, y, z)).is(Blocks.FIRE)) {
-                        fire[x - fMinX][y - fMinY][z - fMinZ] = 1;
+                        fireSet.add(new BlockPos(x, y, z));
                     }
                 }
             }
         }
 
-        // Build summed‑area tables for O(1) cube counts
-        int[][][] sumFlammable = buildSumTable(flammable, sSizeX, sSizeY, sSizeZ);
-        int[][][] sumFire = buildSumTable(fire, fSizeX, fSizeY, fSizeZ);
+        // Cluster flammable blocks using Union‑Find (Chebyshev distance ≤ CLUSTER_RADIUS)
+        int n = flammableList.size();
+        UnionFind uf = new UnionFind(n);
 
-        // Helper to count flammable blocks in a cube (indices in flammable grid)
-        BiFunction<int[], int[], Integer> countFlammable = (p1, p2) -> {
-            int x1 = p1[0], y1 = p1[1], z1 = p1[2];
-            int x2 = p2[0], y2 = p2[1], z2 = p2[2];
-            x1 = Math.max(0, x1); y1 = Math.max(0, y1); z1 = Math.max(0, z1);
-            x2 = Math.min(sSizeX - 1, x2); y2 = Math.min(sSizeY - 1, y2); z2 = Math.min(sSizeZ - 1, z2);
-            if (x1 > x2 || y1 > y2 || z1 > z2) return 0;
-            return sumFlammable[x2+1][y2+1][z2+1]
-                    - sumFlammable[x1][y2+1][z2+1]
-                    - sumFlammable[x2+1][y1][z2+1]
-                    - sumFlammable[x2+1][y2+1][z1]
-                    + sumFlammable[x1][y1][z2+1]
-                    + sumFlammable[x1][y2+1][z1]
-                    + sumFlammable[x2+1][y1][z1]
-                    - sumFlammable[x1][y1][z1];
-        };
-
-        // Helper to count fire blocks in a cube (indices in fire grid)
-        BiFunction<int[], int[], Integer> countFire = (p1, p2) -> {
-            int x1 = p1[0], y1 = p1[1], z1 = p1[2];
-            int x2 = p2[0], y2 = p2[1], z2 = p2[2];
-            x1 = Math.max(0, x1); y1 = Math.max(0, y1); z1 = Math.max(0, z1);
-            x2 = Math.min(fSizeX - 1, x2); y2 = Math.min(fSizeY - 1, y2); z2 = Math.min(fSizeZ - 1, z2);
-            if (x1 > x2 || y1 > y2 || z1 > z2) return 0;
-            return sumFire[x2+1][y2+1][z2+1]
-                    - sumFire[x1][y2+1][z2+1]
-                    - sumFire[x2+1][y1][z2+1]
-                    - sumFire[x2+1][y2+1][z1]
-                    + sumFire[x1][y1][z2+1]
-                    + sumFire[x1][y2+1][z1]
-                    + sumFire[x2+1][y1][z1]
-                    - sumFire[x1][y1][z1];
-        };
-
-        // Evaluate every flammable block in the search area
-        int bestCleanCount = 0;
-        double bestCleanDistSq = Double.MAX_VALUE;
-        BlockPos bestCleanBlock = null;
-
-        int bestAnyCount = 0;
-        double bestAnyDistSq = Double.MAX_VALUE;
-        BlockPos bestAnyBlock = null;
-
-        for (int x = sMinX; x <= sMaxX; x++) {
-            for (int y = sMinY; y <= sMaxY; y++) {
-                for (int z = sMinZ; z <= sMaxZ; z++) {
-                    if (flammable[x - sMinX][y - sMinY][z - sMinZ] == 0) continue;
-
-                    // Density: count flammable blocks in DENSITY_RADIUS cube (search grid coordinates)
-                    int cx = x - sMinX;
-                    int cy = y - sMinY;
-                    int cz = z - sMinZ;
-                    int density = countFlammable.apply(
-                            new int[]{cx - DENSITY_RADIUS, cy - DENSITY_RADIUS, cz - DENSITY_RADIUS},
-                            new int[]{cx + DENSITY_RADIUS, cy + DENSITY_RADIUS, cz + DENSITY_RADIUS}
-                    );
-
-                    // Fire count: count fire blocks in FIRE_RADIUS cube (fire grid coordinates)
-                    int fx = x - fMinX;
-                    int fy = y - fMinY;
-                    int fz = z - fMinZ;
-                    int fireCount = countFire.apply(
-                            new int[]{fx - FIRE_RADIUS, fy - FIRE_RADIUS, fz - FIRE_RADIUS},
-                            new int[]{fx + FIRE_RADIUS, fy + FIRE_RADIUS, fz + FIRE_RADIUS}
-                    );
-
-                    double distSq = mobPos.distSqr(new BlockPos(x, y, z));
-
-                    if (fireCount == 0) {
-                        // No fire nearby – preferred candidate
-                        if (density > bestCleanCount || (density == bestCleanCount && distSq < bestCleanDistSq)) {
-                            bestCleanCount = density;
-                            bestCleanDistSq = distSq;
-                            bestCleanBlock = new BlockPos(x, y, z);
-                        }
-                    } else {
-                        // Fire already present in the neighbourhood – fallback candidate
-                        if (density > bestAnyCount || (density == bestAnyCount && distSq < bestAnyDistSq)) {
-                            bestAnyCount = density;
-                            bestAnyDistSq = distSq;
-                            bestAnyBlock = new BlockPos(x, y, z);
-                        }
-                    }
+        for (int i = 0; i < n; i++) {
+            BlockPos a = flammableList.get(i);
+            for (int j = i + 1; j < n; j++) {
+                BlockPos b = flammableList.get(j);
+                int dx = Math.abs(a.getX() - b.getX());
+                int dy = Math.abs(a.getY() - b.getY());
+                int dz = Math.abs(a.getZ() - b.getZ());
+                if (dx <= CLUSTER_RADIUS && dy <= CLUSTER_RADIUS && dz <= CLUSTER_RADIUS) {
+                    uf.union(i, j);
                 }
             }
         }
 
-        // Return the best clean block if any exists; otherwise fallback to a fire‑nearby block
-        return bestCleanBlock != null ? bestCleanBlock : bestAnyBlock;
-    }
+        // Group positions by cluster root
+        Map<Integer, List<BlockPos>> clusters = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            int root = uf.find(i);
+            clusters.computeIfAbsent(root, k -> new ArrayList<>()).add(flammableList.get(i));
+        }
 
-    /**
-     * Builds a 3D summed‑area table (prefix sums) for O(1) cuboid queries.
-     */
-    private int[][][] buildSumTable(int[][][] grid, int sizeX, int sizeY, int sizeZ) {
-        int[][][] sum = new int[sizeX + 1][sizeY + 1][sizeZ + 1];
-        for (int i = 0; i < sizeX; i++) {
-            for (int j = 0; j < sizeY; j++) {
-                for (int k = 0; k < sizeZ; k++) {
-                    sum[i+1][j+1][k+1] = grid[i][j][k]
-                            + sum[i][j+1][k+1]
-                            + sum[i+1][j][k+1]
-                            + sum[i+1][j+1][k]
-                            - sum[i][j][k+1]
-                            - sum[i][j+1][k]
-                            - sum[i+1][j][k]
-                            + sum[i][j][k];
+        // Separate clusters into those with fire nearby and those without
+        List<List<BlockPos>> cleanClusters = new ArrayList<>();
+        List<List<BlockPos>> dirtyClusters = new ArrayList<>();
+
+        for (List<BlockPos> cluster : clusters.values()) {
+            boolean hasFireNearby = false;
+
+            // Compute bounding box of the cluster
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+            for (BlockPos p : cluster) {
+                if (p.getX() < minX) minX = p.getX();
+                if (p.getY() < minY) minY = p.getY();
+                if (p.getZ() < minZ) minZ = p.getZ();
+                if (p.getX() > maxX) maxX = p.getX();
+                if (p.getY() > maxY) maxY = p.getY();
+                if (p.getZ() > maxZ) maxZ = p.getZ();
+            }
+
+            // Expand bounding box by FIRE_RADIUS
+            int checkMinX = minX - FIRE_RADIUS;
+            int checkMinY = minY - FIRE_RADIUS;
+            int checkMinZ = minZ - FIRE_RADIUS;
+            int checkMaxX = maxX + FIRE_RADIUS;
+            int checkMaxY = maxY + FIRE_RADIUS;
+            int checkMaxZ = maxZ + FIRE_RADIUS;
+
+            // Check if any fire lies within the expanded box
+            for (BlockPos firePos : fireSet) {
+                if (firePos.getX() >= checkMinX && firePos.getX() <= checkMaxX &&
+                        firePos.getY() >= checkMinY && firePos.getY() <= checkMaxY &&
+                        firePos.getZ() >= checkMinZ && firePos.getZ() <= checkMaxZ) {
+                    hasFireNearby = true;
+                    break;
+                }
+            }
+
+            if (!hasFireNearby) {
+                cleanClusters.add(cluster);
+            }
+            /*
+            else {
+                dirtyClusters.add(cluster);
+            }
+             */
+        }
+
+
+        // Choose the largest cluster, preferring clean ones
+        List<BlockPos> targetCluster;
+        if (!cleanClusters.isEmpty()) {
+            targetCluster = Collections.max(cleanClusters, Comparator.comparingInt(List::size));
+        } else if (!dirtyClusters.isEmpty()) {
+            targetCluster = Collections.max(dirtyClusters, Comparator.comparingInt(List::size));
+        } else {
+            return null; // Should never happen because we already checked flammableList not empty
+        }
+
+
+
+        // Determine boundary blocks of the largest cluster (strict 6‑neighbor adjacency to non‑flammable)
+        Set<BlockPos> boundary = new HashSet<>();
+        for (BlockPos pos : targetCluster) {
+            for (Direction dir : Direction.values()) { // 6 directions
+                BlockPos neighbor = pos.relative(dir);
+                if (!flammableSet.contains(neighbor)) {
+                    boundary.add(pos);
+                    break; // No need to check other directions for this block
                 }
             }
         }
-        return sum;
+
+        // If for some reason there is no boundary (e.g., cluster fills entire search area), fallback to any block
+        if (boundary.isEmpty()) {
+            boundary.addAll(targetCluster);
+        }
+
+        // From the boundary, pick the one closest to the mob
+        BlockPos bestBlock = null;
+        double bestDistSq = Double.MAX_VALUE;
+        for (BlockPos pos : boundary) {
+            double distSq = mobPos.distSqr(pos);
+            if (distSq < bestDistSq) {
+                bestDistSq = distSq;
+                bestBlock = pos;
+            }
+        }
+
+        return bestBlock;
     }
+
+    // Simple Union-Find helper
+    private static class UnionFind {
+        private final int[] parent;
+        private final int[] rank;
+
+        public UnionFind(int size) {
+            parent = new int[size];
+            rank = new int[size];
+            for (int i = 0; i < size; i++) parent[i] = i;
+        }
+
+        public int find(int x) {
+            while (parent[x] != x) {
+                parent[x] = parent[parent[x]];
+                x = parent[x];
+            }
+            return x;
+        }
+
+        public void union(int x, int y) {
+            int rx = find(x);
+            int ry = find(y);
+            if (rx == ry) return;
+            if (rank[rx] < rank[ry]) {
+                parent[rx] = ry;
+            } else if (rank[rx] > rank[ry]) {
+                parent[ry] = rx;
+            } else {
+                parent[ry] = rx;
+                rank[rx]++;
+            }
+        }
+    }
+
 }
