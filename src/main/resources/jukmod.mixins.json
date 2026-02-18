@@ -19,8 +19,6 @@
 		"BodyRotationControlMixin",
 		"IllusionerMixin",
 		"CrossbowItemMixin",
-		"VindicatorBreakDoorGoalMixin",
-		"RaiderOpenDoorGoalMixin",
 		"AbstractIllagerMixin"
 	],
 	"injectors": {

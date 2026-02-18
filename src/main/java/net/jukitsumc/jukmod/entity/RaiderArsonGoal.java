@@ -23,8 +23,8 @@ public class RaiderArsonGoal extends Goal {
     private BlockPos targetBlock;
     private int tryTicks = 0;
 
-    private final int MAX_TRYING_TICKS = 160;
-    private final int COOLDOWN_TICKS = 140;
+    private final int MAX_TRYING_TICKS = 120;
+    private final int COOLDOWN_TICKS = 1000;
     private int nextSearchTick = 0;
 
     /**
@@ -43,11 +43,11 @@ public class RaiderArsonGoal extends Goal {
     @Override
     public boolean canUse() {
         Raider raider = (Raider) (this.mob);
-        if (!raider.hasActiveRaid()) {
+        if (!raider.hasActiveRaid() && !raider.hasPatrolTarget()) {
             return false;
         }
 
-        if (mob.tickCount < nextSearchTick) {
+        if (mob.tickCount < nextSearchTick && !raider.isCelebrating()) {
             return false;
         }
 
@@ -77,14 +77,15 @@ public class RaiderArsonGoal extends Goal {
     @Override
     public void start() {
         mob.getNavigation().moveTo(targetBlock.getX(), targetBlock.getY(), targetBlock.getZ(), speedModifier);
-        this.tryTicks = MAX_TRYING_TICKS; // 100 ticks = 5 seconds
+        this.tryTicks = MAX_TRYING_TICKS;
+        this.nextSearchTick = mob.tickCount + COOLDOWN_TICKS;
     }
 
     @Override
     public void stop() {
         mob.getNavigation().stop();
         this.targetBlock = null;
-        this.nextSearchTick = mob.tickCount + COOLDOWN_TICKS;
+
     }
 
     @Override
@@ -96,13 +97,16 @@ public class RaiderArsonGoal extends Goal {
 
         this.mob.getLookControl().setLookAt(targetBlock.getX(), targetBlock.getY(), targetBlock.getZ());
         if (this.mob.getBlockPosBelowThatAffectsMyMovement().above().distSqr(targetBlock) < 9.0) {
-            igniteTarget();
+            int success = igniteTarget();
+            if (success == -1) {
+                this.nextSearchTick -= COOLDOWN_TICKS / 2;
+            }
             stop(); // stop after igniting
         }
     }
 
 
-    private void igniteTarget() {
+    private int igniteTarget() {
         Level level = mob.level();
         BlockPos mobPos = mob.blockPosition();
 
@@ -121,7 +125,7 @@ public class RaiderArsonGoal extends Goal {
         // Check if that block is air and the target is still flammable
         BlockState targetState = level.getBlockState(targetBlock);
         if (targetState.isAir() || targetState.is(Blocks.FIRE) || FlammableBlockRegistry.getDefaultInstance().get(targetState.getBlock()).getSpreadChance() <= 0) {
-            return; // target no longer valid
+            return -1; // target no longer valid
         }
 
         if (level.isEmptyBlock(firePos)) {
@@ -129,7 +133,10 @@ public class RaiderArsonGoal extends Goal {
             level.setBlock(firePos, Blocks.FIRE.defaultBlockState(), 3);
             this.mob.getLookControl().setLookAt(firePos.getX(), firePos.getY(), firePos.getZ());
             this.mob.playSound(SoundEvents.FIRECHARGE_USE, 1.0F, 1.0F / (this.mob.getRandom().nextFloat() * 0.4F + 0.8F));
+            return 1;
         }
+
+        return -1;
     }
 
     private static final int CLUSTER_RADIUS = 6; // Max Chebyshev distance to consider blocks "connected"
@@ -166,8 +173,12 @@ public class RaiderArsonGoal extends Goal {
                 for (int z = sMinZ; z <= sMaxZ; z++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(pos);
+
+                    int spreadChance = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getSpreadChance();
+                    int burnChance = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getBurnChance();
                     if (!state.isAir() && !state.is(Blocks.FIRE) &&
-                            FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getSpreadChance() > 0) {
+                            (spreadChance == 5 || spreadChance == 30 || state.getBlock() == Blocks.TNT
+                                    || (spreadChance == 60 && burnChance <= 20))) {
                         flammableList.add(pos);
                         flammableSet.add(pos);
                     }
