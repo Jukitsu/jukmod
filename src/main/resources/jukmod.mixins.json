@@ -18,7 +18,10 @@
 		"LookControlMixin",
 		"BodyRotationControlMixin",
 		"IllusionerMixin",
-		"CrossbowItemMixin"
+		"CrossbowItemMixin",
+		"VindicatorBreakDoorGoalMixin",
+		"RaiderOpenDoorGoalMixin",
+		"AbstractIllagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
