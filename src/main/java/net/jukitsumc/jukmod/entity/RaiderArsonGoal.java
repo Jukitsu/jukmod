@@ -27,7 +27,7 @@ public class RaiderArsonGoal extends Goal {
 
     private final int MAX_TRYING_TICKS = 120;
     private final int COOLDOWN_TICKS = 60;
-    private int nextSearchTick = 0;
+    private int nextSearchTick;
 
     /**
      * @param mob           the entity using this goal
@@ -53,13 +53,8 @@ public class RaiderArsonGoal extends Goal {
             return false;
         }
 
-        Tuple<BlockPos, BlockPos> target = findFlammableBlock();
-        if (target != null) {
-            this.targetBlock = target.getB();
-            this.firePos = target.getA();
-        }
-
-        return target != null;
+        int success = findFlammableBlock();
+        return targetBlock != null && success > 0;
     }
 
     @Override
@@ -142,17 +137,17 @@ public class RaiderArsonGoal extends Goal {
 
     private static final int FIRE_RADIUS = 2;     // Blocks to check for existing fire near a cluster
 
-    private Tuple<BlockPos, BlockPos> findFlammableBlock() {
+    private int findFlammableBlock() {
         Level level = mob.level();
         BlockPos mobPos = mob.blockPosition();
         int radius = searchRadius;
 
         // Bounding box for flammable search
         int sMinX = mobPos.getX() - radius;
-        int sMinY = mobPos.getY() - radius;
+        int sMinY = mobPos.getY() - radius / 4;
         int sMinZ = mobPos.getZ() - radius;
         int sMaxX = mobPos.getX() + radius;
-        int sMaxY = mobPos.getY() + radius;
+        int sMaxY = mobPos.getY() + radius / 4;
         int sMaxZ = mobPos.getZ() + radius;
 
         // Expanded bounding box for fire detection (to catch fires just outside the search area)
@@ -165,7 +160,6 @@ public class RaiderArsonGoal extends Goal {
 
         // Collect all flammable blocks within the search area
         List<BlockPos> flammableList = new ArrayList<>();
-        Set<BlockPos> flammableSet = new HashSet<>(); // for O(1) boundary checks
 
         for (int x = sMinX; x <= sMaxX; x++) {
             for (int y = sMinY; y <= sMaxY; y++) {
@@ -173,17 +167,15 @@ public class RaiderArsonGoal extends Goal {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(pos);
 
-
                     if (isArsonable(state)) {
                         flammableList.add(pos);
-                        flammableSet.add(pos);
                     }
                 }
             }
         }
 
         if (flammableList.isEmpty()) {
-            return null;
+            return -1;
         }
 
         // Collect all fire blocks within the expanded area (for fire‑near‑cluster checks)
@@ -222,10 +214,8 @@ public class RaiderArsonGoal extends Goal {
             clusters.computeIfAbsent(root, k -> new ArrayList<>()).add(flammableList.get(i));
         }
 
-        // Separate clusters into those with fire nearby and those without
-        List<List<BlockPos>> cleanClusters = new ArrayList<>();
-        List<List<BlockPos>> dirtyClusters = new ArrayList<>();
-
+        // For each cluster, determine if it has fire nearby and compute its minimum distance to the mob
+        List<ClusterInfo> clusterInfos = new ArrayList<>();
         for (List<BlockPos> cluster : clusters.values()) {
             boolean hasFireNearby = false;
 
@@ -259,28 +249,38 @@ public class RaiderArsonGoal extends Goal {
                 }
             }
 
-            if (!hasFireNearby) {
-                cleanClusters.add(cluster);
+            // Compute minimum squared distance from mob to any block in the cluster
+            double minDistSq = Double.MAX_VALUE;
+            for (BlockPos p : cluster) {
+                double distSq = mobPos.distSqr(p);
+                if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                }
             }
 
-            else {
-               // dirtyClusters.add(cluster);
-            }
-
+            clusterInfos.add(new ClusterInfo(cluster, hasFireNearby, minDistSq));
         }
 
+        // Sort clusters by distance (ascending) and take up to the 5 nearest
+        clusterInfos.sort(Comparator.comparingDouble(info -> info.distanceSq));
+        int numCandidates = Math.min(5, clusterInfos.size());
+        List<ClusterInfo> candidates = clusterInfos.subList(0, numCandidates);
 
-        // Choose the largest cluster, preferring clean ones
-        List<BlockPos> targetCluster;
-        if (!cleanClusters.isEmpty()) {
-            targetCluster = Collections.max(cleanClusters, Comparator.comparingInt(List::size));
-        } else if (!dirtyClusters.isEmpty()) {
-            targetCluster = Collections.max(dirtyClusters, Comparator.comparingInt(List::size));
+        // Separate candidates into clean (no fire nearby) and dirty
+        List<ClusterInfo> cleanCandidates = new ArrayList<>();
+        for (ClusterInfo info : candidates) {
+            if (!info.hasFireNearby && this.mob.getRandom().nextFloat() > 0.5F) {
+                cleanCandidates.add(info);
+            }
+        }
+
+        // Select the largest cluster among eligible clean, or if none, among dirty
+        List<BlockPos> targetCluster = null;
+        if (!cleanCandidates.isEmpty()) {
+            targetCluster = Collections.max(cleanCandidates, Comparator.comparingInt(info -> info.cluster.size())).cluster;
         } else {
-            return null; // Should never happen because we already checked flammableList not empty
+            return -1; // No candidate clusters (shouldn't happen if clusters exist)
         }
-
-
 
         // Determine boundary blocks of the largest cluster (strict 6‑neighbor adjacency to non‑flammable)
         Set<Tuple<BlockPos, BlockPos>> boundary = new HashSet<>();
@@ -296,13 +296,13 @@ public class RaiderArsonGoal extends Goal {
 
         // If for some reason there is no boundary (e.g., cluster fills entire search area), fallback to any block
         if (boundary.isEmpty()) {
-            return null;
+            return -1;
         }
 
         // From the boundary, pick the one closest to the mob
         Tuple<BlockPos, BlockPos> bestTarget = null;
         double bestDistSq = Double.MAX_VALUE;
-        for (Tuple<BlockPos, BlockPos> couple: boundary) {
+        for (Tuple<BlockPos, BlockPos> couple : boundary) {
             BlockPos pos = couple.getB();
             double distSq = mobPos.distSqr(pos);
             if (distSq < bestDistSq) {
@@ -311,7 +311,22 @@ public class RaiderArsonGoal extends Goal {
             }
         }
 
-        return bestTarget;
+        this.targetBlock = bestTarget.getB();
+        this.firePos = bestTarget.getA();
+        return 1;
+    }
+
+    // Helper class to hold cluster information
+    private static class ClusterInfo {
+        final List<BlockPos> cluster;
+        final boolean hasFireNearby;
+        final double distanceSq;
+
+        ClusterInfo(List<BlockPos> cluster, boolean hasFireNearby, double distanceSq) {
+            this.cluster = cluster;
+            this.hasFireNearby = hasFireNearby;
+            this.distanceSq = distanceSq;
+        }
     }
 
     // Simple Union-Find helper

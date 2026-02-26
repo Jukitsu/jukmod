@@ -19,7 +19,7 @@
 		"BodyRotationControlMixin",
 		"IllusionerMixin",
 		"CrossbowItemMixin",
-		"AbstractIllagerMixin"
+		"PillagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
