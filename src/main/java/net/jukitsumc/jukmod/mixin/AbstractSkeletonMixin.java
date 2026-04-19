@@ -79,7 +79,8 @@ public abstract class AbstractSkeletonMixin extends Monster {
         Level var15 = this.level();
         if (var15 instanceof ServerLevel serverLevel) {
             if ((this.getRandom().nextInt(20 - this.level().getDifficulty().getId() * 4) < 1
-                || (this.level().getDifficulty().getId() > 2 && this.distanceToSqr(livingEntity) > 400)) && this.distanceToSqr(livingEntity) > 25.0F) {
+                || this.distanceToSqr(livingEntity) > 400) && this.level().getDifficulty().getId() > 2
+                    && this.distanceToSqr(livingEntity) > 25.0F) {
                 Vec3 v = RangedAttackHandler.getInitialVector(this, livingEntity, abstractArrow.getY(), 3.0);
                 this.lookControl.setLookAt(this.getEyePosition().add(v));
                 Projectile.spawnProjectileUsingShoot(abstractArrow, serverLevel, itemStack2, v.x, v.y, v.z, 3.0F, (float)(Math.max(0.0D, 8 - this.level().getDifficulty().getId() * 4)));
