@@ -5,6 +5,7 @@ import net.jukitsumc.jukmod.config.option.BooleanOption;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.world.level.GameType;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,8 +27,8 @@ public class MultiPlayerGameModeMixin {
         missTime = Jukmod.getInstance().getConfig().gameplay().missTime();
     }
 
-    @Inject(method = "hasMissTime", at = @At("HEAD"), cancellable = true)
-    public void hasMissTime(CallbackInfoReturnable cir) {
-        cir.setReturnValue(missTime.get() && !this.localPlayerMode.isCreative());
+    @Overwrite
+    public boolean hasMissTime() {
+        return missTime.get() && !this.localPlayerMode.isCreative();
     }
 }
