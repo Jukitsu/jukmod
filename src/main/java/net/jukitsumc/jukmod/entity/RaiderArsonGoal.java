@@ -6,9 +6,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Tuple;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.raid.Raider;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FireBlock;
@@ -26,7 +29,7 @@ public class RaiderArsonGoal extends Goal {
     private int tryTicks = 0;
 
     private final int MAX_TRYING_TICKS = 120;
-    private final int COOLDOWN_TICKS = 60;
+    private int cooldownTicks;
     private int nextSearchTick;
 
     /**
@@ -34,7 +37,8 @@ public class RaiderArsonGoal extends Goal {
      * @param speedModifier movement speed while pathfinding
      * @param searchRadius  radius (in blocks) to search for flammable blocks
      */
-    public RaiderArsonGoal(Mob mob, double speedModifier, int searchRadius) {
+    public RaiderArsonGoal(Mob mob, int cooldownTicks, double speedModifier, int searchRadius) {
+        this.cooldownTicks = cooldownTicks;
         this.mob = mob;
         this.speedModifier = speedModifier;
         this.searchRadius = searchRadius;
@@ -64,7 +68,7 @@ public class RaiderArsonGoal extends Goal {
         Level level = mob.level();
         BlockState state = level.getBlockState(targetBlock);
         // Stop if block is gone, already fire, or no longer flammable
-        if (state.isAir() || state.is(Blocks.FIRE) || FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getSpreadChance() <= 0) {
+        if (state.isAir() || state.is(Blocks.FIRE) || FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getIgniteOdds() <= 0) {
             return false;
         }
         // Give up after ~3 seconds of trying
@@ -80,14 +84,15 @@ public class RaiderArsonGoal extends Goal {
     public void start() {
         mob.getNavigation().moveTo(targetBlock.getX(), targetBlock.getY(), targetBlock.getZ(), speedModifier);
         this.tryTicks = MAX_TRYING_TICKS;
-        this.nextSearchTick = mob.tickCount + COOLDOWN_TICKS;
+        this.nextSearchTick = mob.tickCount + cooldownTicks;
+        this.mob.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
     }
 
     @Override
     public void stop() {
         mob.getNavigation().stop();
         this.targetBlock = null;
-
+        this.mob.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
     }
 
     @Override
@@ -101,7 +106,7 @@ public class RaiderArsonGoal extends Goal {
         if (this.mob.getBlockPosBelowThatAffectsMyMovement().above().distSqr(targetBlock) < 9.0) {
             int success = igniteTarget();
             if (success == -1) {
-                this.nextSearchTick -= COOLDOWN_TICKS / 2; // Try another target
+                this.nextSearchTick -= cooldownTicks / 2; // Try another target
             }
             stop(); // stop after igniting
         }
@@ -112,7 +117,7 @@ public class RaiderArsonGoal extends Goal {
         Level level = mob.level();
 
         BlockState targetState = level.getBlockState(targetBlock);
-        if (targetState.isAir() || targetState.is(Blocks.FIRE) || FlammableBlockRegistry.getDefaultInstance().get(targetState.getBlock()).getSpreadChance() <= 0) {
+        if (targetState.isAir() || targetState.is(Blocks.FIRE) || FlammableBlockRegistry.getDefaultInstance().get(targetState.getBlock()).getIgniteOdds() <= 0) {
             return -1; // target no longer valid
         }
 
@@ -128,8 +133,8 @@ public class RaiderArsonGoal extends Goal {
     }
 
     private boolean isArsonable(BlockState state) {
-        int spreadChance = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getSpreadChance();
-        int burnChance = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getBurnChance();
+        int spreadChance = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getIgniteOdds();
+        int burnChance = FlammableBlockRegistry.getDefaultInstance().get(state.getBlock()).getBurnOdds();
         return !state.isAir() && !state.is(Blocks.FIRE) && (burnChance == 5 || burnChance == 30 || state.getBlock() == Blocks.TNT
                 || (burnChance == 60 && spreadChance <= 20));
     }

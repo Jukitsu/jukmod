@@ -1,19 +1,45 @@
 package net.jukitsumc.jukmod.client;
 
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor ;
+import net.minecraft.resources.Identifier;
 
-public class JukmodHUD implements HudRenderCallback {
-    private final Minecraft client = Minecraft.getInstance();
+public class JukmodHUD {
 
-    @Override
-    public void onHudRender(GuiGraphics drawContext, DeltaTracker deltaTracker) {
-        if (!client.getDebugOverlay().showDebugScreen()) {
-            drawContext.drawString(this.client.font, "Minecraft 1.21.11", 2, 2, 0xffffffff, true);
-            drawContext.drawString(this.client.font, String.format("%s fps", client.getFps()), 2, client.font.lineHeight + 2, 0xffffffff, true);
-        }
+    private static final Minecraft client = Minecraft.getInstance();
+
+    public static void register() {
+        HudElementRegistry.attachElementAfter(
+                VanillaHudElements.HOTBAR,
+                Identifier.fromNamespaceAndPath("jukmod", "hud"),
+                JukmodHUD::render
+        );
     }
 
+    private static void render(GuiGraphicsExtractor graphics, DeltaTracker tickDelta) {
+
+        if (!client.getDebugOverlay().showDebugScreen()) {
+
+            graphics.text(
+                    client.font,
+                    "Minecraft 1.21.11",
+                    2,
+                    2,
+                    0xFFFFFFFF,
+                    true
+            );
+
+            graphics.text(
+                    client.font,
+                    String.format("%s fps", client.getFps()),
+                    2,
+                    client.font.lineHeight + 2,
+                    0xFFFFFFFF,
+                    true
+            );
+        }
+    }
 }

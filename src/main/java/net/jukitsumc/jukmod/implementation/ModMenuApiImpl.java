@@ -30,7 +30,7 @@ public class ModMenuApiImpl implements ModMenuApi {
                     try {
                         config.saveConfig();
                     } catch (IOException e) {
-                        Jukmod.getInstance().getLogger().error("Failed to save CookeyMod config file", e);
+                        Jukmod.getInstance().getLogger().error("Failed to save Jukmod config file", e);
                     }
                 });
         if (prevScreen != null) builder.setParentScreen(prevScreen);

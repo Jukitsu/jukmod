@@ -7,6 +7,7 @@ import net.minecraft.world.entity.monster.illager.Pillager;
 import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -14,15 +15,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Pillager.class)
 public abstract class PillagerMixin extends AbstractIllager {
 
+    @Shadow public abstract IllagerArmPose getArmPose();
+
     protected PillagerMixin(EntityType<? extends Pillager> entityType, Level level) {
         super(entityType, level);
     }
 
     @Inject(method = "registerGoals", at = @At("TAIL"))
     public void addArsonGoal(CallbackInfo info) {
-        this.goalSelector.addGoal(3,
-                new RaiderArsonGoal(this, 1.0D, 30)
-        );
+        if (random.nextFloat() < 0.2D) {
+            this.goalSelector.addGoal(3,
+                    new RaiderArsonGoal(this, 20, 1.3D, 50)
+            );
+        }
+
+        else
+            this.goalSelector.addGoal(3,
+                    new RaiderArsonGoal(this, 60, 1.0D, 30)
+            );
 
 
     }

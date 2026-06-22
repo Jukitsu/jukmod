@@ -37,9 +37,9 @@ public class RemotePlayerMixin extends AbstractClientPlayer {
      * @reason Linear Interpolation doesn't seem to affect rendering. We'll just bring back the old behaviour.
      */
     @Inject(method = "lerpMotion", at = @At("HEAD"), cancellable = true)
-    public void onLerpMotion(double d, double e, double f, CallbackInfo ci) {
+    public void onLerpMotion(Vec3 vec3, CallbackInfo ci) {
         if (!this.lerpPlayerVelocity.get()) {
-            this.setDeltaMovement(new Vec3(d, e, f));
+            this.setDeltaMovement(vec3);
             ci.cancel();
         }
     }
