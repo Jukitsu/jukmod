@@ -25,7 +25,7 @@ public class JukmodHUD {
 
             graphics.text(
                     client.font,
-                    "Minecraft 1.21.11",
+                    "Minecraft 26.1.2",
                     2,
                     2,
                     0xFFFFFFFF,
